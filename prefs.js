@@ -23,6 +23,14 @@ import GObject from 'gi://GObject';
 import { ExtensionPreferences, gettext as _ } from 'resource:///org/gnome/Shell/Extensions/js/extensions/prefs.js';
 
 /**
+ * Contributors shown on the About page. The group is hidden while empty.
+ */
+const CONTRIBUTORS = [];
+
+const LICENSE_NAME = 'GNU General Public License v3.0 or later';
+const LICENSE_URL = 'https://www.gnu.org/licenses/gpl-3.0.html';
+
+/**
  * Define the PositionItem GObject class for Indicator Position choices.
  */
 const PositionItem = GObject.registerClass(
@@ -74,7 +82,10 @@ export default class SpotifyControlsPrefs extends ExtensionPreferences {
         window.set_title(_('Spotify Controls Preferences'));
 
         // Create the main preferences page
-        const page = new Adw.PreferencesPage();
+        const page = new Adw.PreferencesPage({
+            title: _('Settings'),
+            icon_name: 'preferences-system-symbolic',
+        });
 
         /**
          * GENERAL SETTINGS GROUP
@@ -314,8 +325,84 @@ export default class SpotifyControlsPrefs extends ExtensionPreferences {
         // Add the display group to the page
         page.add(displayGroup);
 
-        // Finally, add the page to the window and show
+        // Finally, add the pages to the window and show
         window.add(page);
+        window.add(this._buildAboutPage());
         window.show();
+    }
+
+    /**
+     * Builds the About page: name, version, website, contributors and license.
+     * @returns {Adw.PreferencesPage} - The About page.
+     */
+    _buildAboutPage() {
+        const aboutPage = new Adw.PreferencesPage({
+            title: _('About'),
+            icon_name: 'help-about-symbolic',
+        });
+
+        /**
+         * EXTENSION INFO GROUP
+         */
+        const infoGroup = new Adw.PreferencesGroup({
+            title: this.metadata.name,
+            description: this.metadata.description,
+        });
+
+        const versionRow = new Adw.ActionRow({ title: _('Version') });
+        versionRow.add_suffix(new Gtk.Label({
+            label: `${this.metadata.version ?? ''}`,
+            valign: Gtk.Align.CENTER,
+        }));
+        infoGroup.add(versionRow);
+
+        if (this.metadata.url)
+            infoGroup.add(this._createLinkRow(_('Website'), this.metadata.url));
+
+        aboutPage.add(infoGroup);
+
+        /**
+         * CONTRIBUTORS GROUP
+         */
+        if (CONTRIBUTORS.length > 0) {
+            const contributorsGroup = new Adw.PreferencesGroup({
+                title: _('Contributors'),
+            });
+
+            for (const name of CONTRIBUTORS)
+                contributorsGroup.add(new Adw.ActionRow({ title: name }));
+
+            aboutPage.add(contributorsGroup);
+        }
+
+        /**
+         * LICENSE GROUP
+         */
+        const licenseGroup = new Adw.PreferencesGroup({
+            title: _('License'),
+        });
+        licenseGroup.add(this._createLinkRow(LICENSE_NAME, LICENSE_URL));
+        aboutPage.add(licenseGroup);
+
+        return aboutPage;
+    }
+
+    /**
+     * Creates a row with a title, the URL as subtitle and a link button.
+     * @param {string} title - The row title.
+     * @param {string} url - The URL to open.
+     * @returns {Adw.ActionRow} - The row.
+     */
+    _createLinkRow(title, url) {
+        const row = new Adw.ActionRow({ title, subtitle: url });
+        const linkButton = new Gtk.LinkButton({
+            uri: url,
+            icon_name: 'external-link-symbolic',
+            tooltip_text: _('Open in browser'),
+            valign: Gtk.Align.CENTER,
+        });
+        row.add_suffix(linkButton);
+        row.activatable_widget = linkButton;
+        return row;
     }
 }
