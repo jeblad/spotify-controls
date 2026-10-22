@@ -21,7 +21,7 @@ import Gtk from 'gi://Gtk';
 import Gio from 'gi://Gio';
 import GLib from 'gi://GLib';
 import GObject from 'gi://GObject';
-import { ExtensionPreferences, gettext as _ } from 'resource:///org/gnome/Shell/Extensions/js/extensions/prefs.js';
+import { ExtensionPreferences, gettext as _, ngettext } from 'resource:///org/gnome/Shell/Extensions/js/extensions/prefs.js';
 
 const LICENSE_NAME = 'GNU General Public License v3.0 or later';
 const LICENSE_URL = 'https://www.gnu.org/licenses/gpl-3.0.html';
@@ -362,6 +362,8 @@ export default class SpotifyControlsPrefs extends ExtensionPreferences {
          * Sections come from authors.ini, translators from the
          * 'translator-credits' gettext entry. Empty roles are hidden.
          */
+        // Translators: Replace with your name(s), one per line, optionally
+        // followed by <email>. Do not translate literally.
         const translatorCredits = _('translator-credits');
         const roles = [
             ...this._readAuthors(),
@@ -377,7 +379,8 @@ export default class SpotifyControlsPrefs extends ExtensionPreferences {
             for (const [role, names] of roles) {
                 const roleRow = new Adw.ExpanderRow({
                     title: role,
-                    subtitle: `${names.length}`,
+                    subtitle: ngettext('%d person', '%d people', names.length)
+                        .replace('%d', names.length),
                 });
 
                 for (const name of names)
@@ -453,6 +456,10 @@ export default class SpotifyControlsPrefs extends ExtensionPreferences {
             tooltip_text: _('Open in browser'),
             valign: Gtk.Align.CENTER,
         });
+        // Icon-only button: give screen readers a name that says where it goes
+        // Translators: %s is the link's title, e.g. "Website" or the license name
+        const accessibleLabel = _('Open %s in browser').replace('%s', title);
+        linkButton.update_property([Gtk.AccessibleProperty.LABEL], [accessibleLabel]);
         row.add_suffix(linkButton);
         row.activatable_widget = linkButton;
         return row;

@@ -10,6 +10,7 @@ trap 'rm -rf "$OUT"' EXIT
 
 EXTRA=(--extra-source=icons)
 [ -f authors.ini ] && EXTRA+=(--extra-source=authors.ini)
+[ -d po ] && EXTRA+=(--podir=po)
 
 gnome-extensions pack --force \
     "${EXTRA[@]}" \
