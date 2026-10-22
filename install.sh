@@ -8,8 +8,11 @@ UUID=$(sed -n 's/.*"uuid": *"\([^"]*\)".*/\1/p' metadata.json)
 OUT=$(mktemp -d)
 trap 'rm -rf "$OUT"' EXIT
 
+EXTRA=(--extra-source=icons)
+[ -f AUTHORS ] && EXTRA+=(--extra-source=AUTHORS)
+
 gnome-extensions pack --force \
-    --extra-source=icons \
+    "${EXTRA[@]}" \
     --schema=schemas/org.gnome.shell.extensions.spotify-controls.gschema.xml \
     --out-dir="$OUT" \
     .

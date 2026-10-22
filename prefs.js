@@ -22,11 +22,6 @@ import Gio from 'gi://Gio';
 import GObject from 'gi://GObject';
 import { ExtensionPreferences, gettext as _ } from 'resource:///org/gnome/Shell/Extensions/js/extensions/prefs.js';
 
-/**
- * Contributors shown on the About page. The group is hidden while empty.
- */
-const CONTRIBUTORS = [];
-
 const LICENSE_NAME = 'GNU General Public License v3.0 or later';
 const LICENSE_URL = 'https://www.gnu.org/licenses/gpl-3.0.html';
 
@@ -363,14 +358,32 @@ export default class SpotifyControlsPrefs extends ExtensionPreferences {
 
         /**
          * CONTRIBUTORS GROUP
+         * Authors come from the AUTHORS file, translators from the
+         * 'translator-credits' gettext entry. Empty roles are hidden.
          */
-        if (CONTRIBUTORS.length > 0) {
+        const translatorCredits = _('translator-credits');
+        const roles = [
+            [_('Authors'), this._readAuthors()],
+            [_('Translators'), translatorCredits === 'translator-credits'
+                ? [] : this._parseNameList(translatorCredits)],
+        ].filter(([, names]) => names.length > 0);
+
+        if (roles.length > 0) {
             const contributorsGroup = new Adw.PreferencesGroup({
                 title: _('Contributors'),
             });
 
-            for (const name of CONTRIBUTORS)
-                contributorsGroup.add(new Adw.ActionRow({ title: name }));
+            for (const [role, names] of roles) {
+                const roleRow = new Adw.ExpanderRow({
+                    title: role,
+                    subtitle: `${names.length}`,
+                });
+
+                for (const name of names)
+                    roleRow.add_row(new Adw.ActionRow({ title: name }));
+
+                contributorsGroup.add(roleRow);
+            }
 
             aboutPage.add(contributorsGroup);
         }
@@ -385,6 +398,32 @@ export default class SpotifyControlsPrefs extends ExtensionPreferences {
         aboutPage.add(licenseGroup);
 
         return aboutPage;
+    }
+
+    /**
+     * Reads the AUTHORS file in the extension directory.
+     * @returns {string[]} - Author names, or an empty list if the file is missing.
+     */
+    _readAuthors() {
+        try {
+            const file = Gio.File.new_for_path(`${this.path}/AUTHORS`);
+            const [, contents] = file.load_contents(null);
+            return this._parseNameList(new TextDecoder().decode(contents));
+        } catch (e) {
+            return [];
+        }
+    }
+
+    /**
+     * Parses one name per line, skipping blank lines and '#' comments and
+     * dropping any trailing '<email>'.
+     * @param {string} text - The text to parse.
+     * @returns {string[]} - The names.
+     */
+    _parseNameList(text) {
+        return text.split('\n')
+            .map(line => line.replace(/<[^>]*>/, '').trim())
+            .filter(line => line && !line.startsWith('#'));
     }
 
     /**
