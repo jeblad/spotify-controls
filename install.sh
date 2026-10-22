@@ -9,7 +9,7 @@ OUT=$(mktemp -d)
 trap 'rm -rf "$OUT"' EXIT
 
 EXTRA=(--extra-source=icons)
-[ -f AUTHORS ] && EXTRA+=(--extra-source=AUTHORS)
+[ -f authors.ini ] && EXTRA+=(--extra-source=authors.ini)
 
 gnome-extensions pack --force \
     "${EXTRA[@]}" \

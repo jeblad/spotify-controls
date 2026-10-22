@@ -19,6 +19,7 @@
 import Adw from 'gi://Adw';
 import Gtk from 'gi://Gtk';
 import Gio from 'gi://Gio';
+import GLib from 'gi://GLib';
 import GObject from 'gi://GObject';
 import { ExtensionPreferences, gettext as _ } from 'resource:///org/gnome/Shell/Extensions/js/extensions/prefs.js';
 
@@ -358,12 +359,12 @@ export default class SpotifyControlsPrefs extends ExtensionPreferences {
 
         /**
          * CONTRIBUTORS GROUP
-         * Authors come from the AUTHORS file, translators from the
+         * Sections come from authors.ini, translators from the
          * 'translator-credits' gettext entry. Empty roles are hidden.
          */
         const translatorCredits = _('translator-credits');
         const roles = [
-            [_('Authors'), this._readAuthors()],
+            ...this._readAuthors(),
             [_('Translators'), translatorCredits === 'translator-credits'
                 ? [] : this._parseNameList(translatorCredits)],
         ].filter(([, names]) => names.length > 0);
@@ -401,17 +402,29 @@ export default class SpotifyControlsPrefs extends ExtensionPreferences {
     }
 
     /**
-     * Reads the AUTHORS file in the extension directory.
-     * @returns {string[]} - Author names, or an empty list if the file is missing.
+     * Reads authors.ini (GLib.KeyFile) in the extension directory. Each group
+     * is a section, with its people in a ';'-separated 'Names' list.
+     * @returns {Array<[string, string[]]>} - Sections in file order, each as
+     *     [title, names], or an empty list if the file is missing.
      */
     _readAuthors() {
+        const keyFile = new GLib.KeyFile();
         try {
-            const file = Gio.File.new_for_path(`${this.path}/AUTHORS`);
-            const [, contents] = file.load_contents(null);
-            return this._parseNameList(new TextDecoder().decode(contents));
+            keyFile.load_from_file(`${this.path}/authors.ini`, GLib.KeyFileFlags.NONE);
         } catch (e) {
             return [];
         }
+
+        const [groups] = keyFile.get_groups();
+        return groups.map(group => {
+            let names;
+            try {
+                names = keyFile.get_string_list(group, 'Names');
+            } catch (e) {
+                names = [];
+            }
+            return [group, this._parseNameList(names.join('\n'))];
+        });
     }
 
     /**
